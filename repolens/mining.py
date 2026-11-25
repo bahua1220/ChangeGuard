@@ -13,8 +13,9 @@ from typing import Callable
 from pydriller import Git
 from git import Repo
 from git.exc import GitCommandError
+from repolens.methods import extract_methods
 
-MINING_VERSION = 3
+MINING_VERSION = 4
 DIFF_LIMIT = 12_000
 
 
@@ -150,6 +151,7 @@ def mine(spec: dict, progress: Callable[[int, int], None] | None = None) -> dict
                         "added_lines": file.added_lines,
                         "deleted_lines": file.deleted_lines,
                         "diff": diff[:DIFF_LIMIT], "diff_truncated": len(diff) > DIFF_LIMIT,
+                        **extract_methods(file),
                     })
             if progress:
                 progress(index + 1, len(spec["hashes"]))

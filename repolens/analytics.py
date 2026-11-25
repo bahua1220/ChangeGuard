@@ -3,7 +3,7 @@
 import pandas as pd
 
 COMMIT_COLUMNS = ["hash", "message", "author_name", "author_email", "committed_at", "authored_at", "is_merge"]
-CHANGE_COLUMNS = ["commit_hash", "old_path", "new_path", "path", "module", "change_type", "added_lines", "deleted_lines", "diff", "diff_truncated"]
+CHANGE_COLUMNS = ["commit_hash", "old_path", "new_path", "path", "module", "change_type", "added_lines", "deleted_lines", "diff", "diff_truncated", "method_status", "changed_methods"]
 
 
 def frames(snapshot, timezone="Asia/Shanghai"):
