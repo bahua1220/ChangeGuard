@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import html
 import os
+import re
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -15,9 +17,11 @@ from repolens.mining import MINING_VERSION, RepositoryError, analysis_spec, insp
 from repolens.remote import download_github
 from repolens.network import windows_proxy
 from repolens.reports import SummaryError, build_ai_payload, export_markdown, factual_report, fingerprint, generate_ai_report, summary_key
-from repolens.storage import load_snapshot, load_summary, recent_runs, save_snapshot, save_summary
+from repolens.storage import delete_sprint, list_sprints, load_snapshot, load_summary, recent_runs, save_snapshot, save_sprint, save_summary
+from repolens.sprints import coverage_note, repository_key
 
 ROOT = Path(__file__).resolve().parent
+APP_VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ChangeGuard · Git 历史分析", page_icon="◈", layout="wide", initial_sidebar_state="expanded")
 
@@ -100,6 +104,15 @@ def display_commit(sha, commits, changes, key):
         with st.expander(f"{file.change_type} · {file.path}   +{file.added_lines} / −{file.deleted_lines}", expanded=len(files) == 1):
             if file.old_path and file.new_path and file.old_path != file.new_path:
                 st.text(f"{file.old_path} → {file.new_path}")
+            st.markdown("**Changed methods · 变更方法**")
+            method_rows = file.changed_methods if isinstance(file.changed_methods, list) else []
+            if method_rows:
+                table = pd.DataFrame(method_rows)
+                table["version"] = table["version"].map({"before": "变更前", "after": "变更后"})
+                st.dataframe(table[["signature", "version", "start_line", "end_line"]].rename(columns={"signature": "方法签名", "version": "源码版本", "start_line": "起始行", "end_line": "结束行"}), hide_index=True, width="stretch")
+                st.caption("列出与增删行相交的方法位置。同一方法可同时显示变更前和变更后；不追踪跨文件移动或重命名。")
+            else:
+                st.caption({"unsupported": "该文件语言或类型不支持方法解析。", "none": "未识别到方法内部的行变更（可能仅修改模块级代码、注释或路径）。", "error": "方法解析失败，文件统计和 diff 仍可查看。"}.get(file.method_status, "此缓存尚未采集方法信息，请重新分析仓库。"))
             if file.diff_truncated:
                 st.warning("差异较长，仅保存并展示前 12,000 个字符；统计行数仍来自完整变更记录。")
             if file.diff:
@@ -121,6 +134,10 @@ with st.sidebar:
             st.session_state["repo_info"] = info
             st.session_state["source_mode"] = "本地路径"
             analyze(info, info["current"], 300, False)
+            demo_key = repository_key(st.session_state["snapshot"]["meta"])
+            if not list_sprints(demo_key):
+                save_sprint(demo_key, "Sprint 1", "2026-11-09", "2026-11-14")
+                save_sprint(demo_key, "Sprint 2", "2026-11-15", "2026-11-22")
         except (RepositoryError, RuntimeError, ValueError) as exc:
             st.error(str(exc))
     st.caption("演示数据为合成记录，不代表真实开发活动。")
@@ -173,7 +190,10 @@ with st.sidebar:
                 st.error(str(exc))
         st.caption("读取已提交历史；未提交修改不参与分析。")
     with st.expander("最近分析"):
-        histories = [r for r in recent_runs() if r.get("mining_version") == MINING_VERSION]
+        all_histories = recent_runs()
+        histories = [r for r in all_histories if r.get("mining_version") == MINING_VERSION]
+        if any(r.get("mining_version") != MINING_VERSION for r in all_histories):
+            st.caption("旧版分析需重新采集以补充方法信息；已有 GitHub 下载可直接复用，无需勾选更新下载。")
         if histories:
             chosen = st.selectbox("选择已缓存快照", histories, format_func=lambda r: f"{r['name']} · {short_branch(r['branch'])} · {r['tip'][:7]}")
             if st.button("打开缓存", width="stretch"):
@@ -187,13 +207,13 @@ with st.sidebar:
         model = st.text_input("模型名称", value=os.getenv("REPOLENS_AI_MODEL", ""), placeholder="填写服务商提供的模型 ID")
         api_key = st.text_input("API Key", value=os.getenv("REPOLENS_AI_API_KEY", ""), type="password")
         st.caption("兼容 Chat Completions + JSON 输出。本地服务可不填密钥。密钥不写入数据库。")
-    st.caption("ChangeGuard MVP · Local-first")
+    st.caption(f"ChangeGuard {APP_VERSION} · Local-first")
 
 
 snapshot = st.session_state.get("snapshot")
 if snapshot is None:
     st.markdown('''<div class="hero"><div class="eyebrow">REPOSITORY EVOLUTION, MADE READABLE</div>
-    <h1>看见代码如何演化。</h1><p>从分散的 Git 记录，到清晰的开发脉络。<br>探索提交、开发者与文件变化，为下一次 代码变化回顾准备有依据的报告。</p>
+    <h1>看见代码如何演化。</h1><p>从分散的 Git 记录，到清晰的开发脉络。<br>探索提交、开发者与文件变化，为下一次 Sprint 回顾准备有依据的报告。</p>
     <span class="tag">PyDriller + Interactive Analytics + AI Summaries</span></div>''', unsafe_allow_html=True)
     st.info("从左侧输入公开 GitHub 仓库链接，点击「下载并分析」；也可载入演示仓库或使用本地路径。")
     for col, (symbol, name, text) in zip(st.columns(3), [
@@ -204,7 +224,7 @@ if snapshot is None:
         with col:
             st.markdown(f'<div class="feature"><div class="symbol">{symbol}</div><h3>{name}</h3><p>{text}</p></div>', unsafe_allow_html=True)
     st.markdown("### 一个场景，走完完整流程")
-    st.write("选择仓库与分支 → 选择日期范围 → 探索图表与 diff → 核查摘要依据 → 导出报告。")
+    st.write("选择仓库与分支 → 筛选 Sprint 范围 → 探索图表与 diff → 核查摘要依据 → 导出报告。")
     st.stop()
 
 meta = snapshot["meta"]
@@ -224,11 +244,48 @@ if commits.empty:
     st.info("当前快照没有符合条件的提交，请更换分支或采集选项。")
     st.stop()
 
+repo_key = repository_key(meta)
+sprints = list_sprints(repo_key)
+sprint_map = {item["id"]: item for item in sprints}
+sprint_select_key = "sprint_select_" + repo_key
+pending_key = "sprint_pending_" + repo_key
+if pending_key in st.session_state:
+    st.session_state[sprint_select_key] = st.session_state.pop(pending_key)
+if st.session_state.get(sprint_select_key, "custom") not in ["custom", *sprint_map]:
+    st.session_state[sprint_select_key] = "custom"
+with st.container(border=True):
+    title("Sprint 工作区", "保存迭代日期后，可直接切换对应图表和变化报告；配置在本机持久保存。")
+    sprint_id = st.selectbox("选择 Sprint", ["custom", *sprint_map], format_func=lambda value: "自定义日期范围" if value == "custom" else sprint_map[value]["name"], key=sprint_select_key)
+    active_sprint = sprint_map.get(sprint_id)
+    with st.expander("创建或编辑 Sprint"):
+        edit_key = "edit_sprint_" + repo_key
+        if st.session_state.get(edit_key, "new") not in ["new", *sprint_map]:
+            st.session_state[edit_key] = "new"
+        editing = st.selectbox("编辑目标", ["new", *sprint_map], format_func=lambda value: "新建 Sprint" if value == "new" else sprint_map[value]["name"], key=edit_key)
+        existing = sprint_map.get(editing)
+        with st.form("sprint_form_" + repo_key + editing):
+            sprint_name = st.text_input("Sprint 名称", value=existing["name"] if existing else "", placeholder="例如 Sprint 1", max_chars=100)
+            sprint_dates = st.date_input("Sprint 起止日期（含首尾）", value=(date.fromisoformat(existing["start"]), date.fromisoformat(existing["end"])) if existing else (min(commits["date"]), max(commits["date"])))
+            if st.form_submit_button("保存 Sprint", type="primary"):
+                try:
+                    if len(sprint_dates) != 2:
+                        raise ValueError("请选择完整的 Sprint 起止日期。")
+                    saved_id = save_sprint(repo_key, sprint_name, *sprint_dates, sprint_id=existing["id"] if existing else None)
+                    st.session_state[pending_key] = saved_id
+                    st.rerun()
+                except ValueError as exc:
+                    st.error(str(exc))
+        if existing and st.button("删除该 Sprint", key="delete_sprint_" + existing["id"]):
+            delete_sprint(repo_key, existing["id"])
+            st.session_state[pending_key] = "custom" if sprint_id == existing["id"] else sprint_id
+            st.rerun()
+
 with st.container(border=True):
     date_col, author_col, module_col = st.columns([1.3, 1, 1])
     key = meta["id"] + timezone
     with date_col:
-        selected_dates = st.date_input("日期范围（含首尾）", value=(min(commits["date"]), max(commits["date"])), min_value=min(commits["date"]), max_value=max(commits["date"]), key="dates_" + key)
+        date_values = (date.fromisoformat(active_sprint["start"]), date.fromisoformat(active_sprint["end"])) if active_sprint else (min(commits["date"]), max(commits["date"]))
+        selected_dates = st.date_input("日期范围（含首尾）", value=date_values, disabled=bool(active_sprint), key="dates_" + key + (str(active_sprint) if active_sprint else "custom"))
     with author_col:
         author_options = dict(zip(commits["author_id"], commits["author_name"]))
         selected_authors = st.multiselect("开发者", sorted(author_options), format_func=lambda a: f"{author_options[a]} · {a}", placeholder="全部开发者", key="authors_" + key)
@@ -239,15 +296,18 @@ if len(selected_dates) != 2:
     st.info("请选择完整的开始日期和结束日期。")
     st.stop()
 start, end = selected_dates
+if active_sprint:
+    for note in coverage_note(meta, commits, start, end):
+        st.warning(note)
 selected_commits, selected_changes = filter_frames(commits, changes, start, end, selected_authors, selected_modules)
 stats = metrics(selected_commits, selected_changes)
-for col, label, value in zip(st.columns(5), ["提交", "开发者", "文件路径", "新增行", "删除行"], [stats["commits"], stats["developers"], stats["files"], stats["added"], stats["deleted"]]):
+for col, label, value in zip(st.columns(5), ["提交", "作者标识", "文件路径", "新增行", "删除行"], [stats["commits"], stats["developers"], stats["files"], stats["added"], stats["deleted"]]):
     col.metric(label, f"{value:,}")
 if selected_commits.empty:
     st.info("当前筛选范围没有提交。请调整日期、开发者或模块。")
     st.stop()
 
-overview, developers, explorer, reports = st.tabs(["仓库概览", "开发者活动", "文件与提交", "变化报告"])
+overview, developers, explorer, reports = st.tabs(["仓库概览", "开发者活动", "文件与提交", "Sprint 报告"])
 
 with overview:
     left, right = st.columns([1.6, 1])
@@ -306,17 +366,23 @@ with explorer:
         display_commit(sha, selected_commits, selected_changes, "explorer")
 
 with reports:
-    title("代码变化报告", "统计由程序计算；AI 可选，用于解释变化。所有内容使用当前筛选范围。")
-    report_title = st.text_input("报告名称", value="开发变化回顾", key="report_title")
+    title("Sprint 回顾报告", "统计由程序计算；AI 可选，用于解释变化。所有内容使用当前筛选范围。")
+    report_title = st.text_input("报告名称", value=active_sprint["name"] + " 变化报告" if active_sprint else "Sprint 开发回顾", key="report_title_" + repo_key + sprint_id)
     context = {"title": report_title, "start": str(start), "end": str(end), "timezone": timezone, "authors": selected_authors, "modules": selected_modules}
+    if active_sprint:
+        context["sprint"] = active_sprint
+        context["coverage_warnings"] = coverage_note(meta, commits, start, end)
+        st.caption(f"当前 Sprint：{active_sprint['name']} · {active_sprint['start']} 至 {active_sprint['end']} · 报告使用当前分支及作者/模块筛选。")
     scope_key = fingerprint({"run": meta["id"], "context": context, "hashes": selected_commits["hash"].tolist()})
     payload = build_ai_payload(selected_commits, selected_changes)
+    payload["scope"] = context
     ai_key = summary_key(payload, base_url, model)
     existing_ai = load_summary(ai_key)
     st.caption(f"AI 输入预览：{len(selected_commits)} 条选中提交，提供 {len(payload['commits'])} 条提交的代码依据；最多每条 8 个文件，diff 按预算截断。作者姓名与 email 不作为独立字段发送。")
     consent = st.checkbox("我同意将当前范围的提交说明、路径和部分 diff 发送至配置的模型接口", key="consent")
     use_cache = st.checkbox("复用相同输入的 AI 摘要缓存", value=True)
     if st.button("生成 AI 摘要", type="primary", disabled=not consent or not model.strip() or not payload["commits"]):
+        st.session_state.pop("ai_error_for_" + scope_key, None)
         try:
             with st.spinner("正在生成并校验摘要依据…"):
                 result = existing_ai if use_cache and existing_ai else generate_ai_report(payload, base_url, model, api_key)
@@ -325,15 +391,26 @@ with reports:
                 st.session_state["ai_for_" + scope_key] = {"key": ai_key, "report": result}
             st.success("摘要已生成；提交与文件引用已校验，文字结论仍需核查。")
         except SummaryError as exc:
-            st.error(str(exc))
+            st.session_state["ai_error_for_" + scope_key] = {"key": ai_key, "message": str(exc)}
     stored = st.session_state.get("ai_for_" + scope_key)
     report = stored["report"] if stored and stored["key"] == ai_key else factual_report(selected_commits, selected_changes)
+    last_error = st.session_state.get("ai_error_for_" + scope_key)
+    last_error = last_error if last_error and last_error["key"] == ai_key else None
+    if last_error:
+        st.error(last_error["message"])
     if report["mode"] == "factual":
-        st.info("当前显示统计报告，未调用 AI。配置模型并勾选发送确认后，可生成智能摘要。")
+        if last_error:
+            report["ai_attempt_failed"] = True
+            report["limitations"][0] = "AI 请求或摘要校验未成功；本报告由程序统计生成，未使用失败的模型结果。"
+            st.info("本次 AI 生成或引用校验未通过，下面保留程序计算的统计报告。可重新生成；统计和 diff 仍可正常使用。")
+        else:
+            st.info("当前显示统计报告，未调用 AI。配置模型并勾选发送确认后，可生成智能摘要。")
     else:
+        if last_error:
+            st.info("本次生成未通过，当前保留上一次成功生成的 AI 摘要。")
         st.caption(f"AI 摘要 · {report['model']} · {report['prompt_version']} · 不是完整代码审查结论")
     st.markdown(f"#### {html.escape(report_title)}")
-    st.caption(f"{start} — {end} · {timezone} · {stats['commits']} commits · {stats['developers']} developers")
+    st.caption(f"{start} — {end} · {timezone} · {stats['commits']} commits · {stats['developers']} 个作者标识（按邮箱区分）")
     evidence_hashes = set()
     for item in report["highlights"]:
         with st.container(border=True):
@@ -351,7 +428,8 @@ with reports:
         if report["mode"] == "ai":
             st.write(f"语义摘要依据覆盖 {report['coverage']['evidence_commits']} / {report['coverage']['selected_commits']} 条提交；文件和 diff 可能截断。引用校验不等同于事实校验。")
     markdown = export_markdown(meta, context, selected_commits, selected_changes, report)
-    st.download_button("下载 Markdown 报告", markdown, file_name=f"changeguard-{start}-{end}.md", mime="text/markdown", width="stretch", on_click="ignore")
+    sprint_filename = re.sub(r"[^\w.-]+", "-", active_sprint["name"])[:60] + "-" if active_sprint else ""
+    st.download_button("下载 Markdown 报告", markdown, file_name=f"changeguard-{sprint_filename}{start}-{end}.md", mime="text/markdown", width="stretch", on_click="ignore")
     with st.expander("查看发送给模型的数据结构"):
         st.json(payload, expanded=False)
 

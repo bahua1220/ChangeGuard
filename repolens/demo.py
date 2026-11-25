@@ -39,7 +39,7 @@ def create_demo(path=DEFAULT_DEMO):
         command("commit", "-m", message, env=env)
 
     command("init", "--initial-branch=main")
-    commit("docs: initialize synthetic Atlas project", "Alice", 9, 9, {"README.md": "# Atlas\nSynthetic repository for RepoLens demos.\n", ".gitignore": "__pycache__/\n.env\n"})
+    commit("docs: initialize synthetic Atlas project", "Alice", 9, 9, {"README.md": "# Atlas\nSynthetic repository for ChangeGuard demos.\n", ".gitignore": "__pycache__/\n.env\n"})
     commit("feat: add repository metadata reader", "Alice", 10, 10, {"src/mining/reader.py": "def read_metadata(repo):\n    return {'name': repo.name}\n", "tests/test_reader.py": "def test_metadata():\n    assert 'name' in {'name': 'atlas'}\n"})
     commit("feat: introduce dashboard layout", "Bob", 10, 14, {"src/ui/dashboard.py": "TITLE = 'Atlas'\n\ndef render(data):\n    return {'title': TITLE, 'data': data}\n"})
     commit("feat: add SQLite commit cache", "Chen", 11, 10, {"src/storage/cache.py": "import sqlite3\n\ndef connect(path):\n    return sqlite3.connect(path)\n"})
@@ -54,7 +54,7 @@ def create_demo(path=DEFAULT_DEMO):
     commit("feat: add developer activity table", "Bob", 16, 14, {"src/ui/developers.py": "from collections import Counter\n\ndef activity(commits):\n    return Counter(item['author'] for item in commits)\n"})
     commit("feat: build evidence-linked report", "Chen", 17, 10, {"src/reports/summary.py": "def evidence(commits):\n    return [{'hash': c['hash'], 'message': c['message']} for c in commits]\n"})
     commit("refactor: rename metadata reader module", "Alice", 18, 10, {}, moves=[("src/mining/reader.py", "src/mining/extractor.py")])
-    commit("docs: document sprint review workflow", "Chen", 19, 11, {"docs/sprint-review.md": "# Sprint review\nSelect a branch and date range.\nReview charts, inspect diffs and verify report evidence.\n", "README.md": "# Atlas\nSynthetic repository for RepoLens demos.\n\nIncludes mining, a dashboard, caching and report evidence.\n"})
+    commit("docs: document sprint review workflow", "Chen", 19, 11, {"docs/sprint-review.md": "# Sprint review\nSelect a branch and date range.\nReview charts, inspect diffs and verify report evidence.\n", "README.md": "# Atlas\nSynthetic repository for ChangeGuard demos.\n\nIncludes mining, a dashboard, caching and report evidence.\n"})
     commit("fix: sort timeline dates before rendering", "Bob", 20, 10, {"src/ui/timeline.py": "def daily_counts(commits):\n    counts = {}\n    for commit in commits:\n        day = commit['timestamp'][:10]\n        counts[day] = counts.get(day, 0) + 1\n    return dict(sorted(counts.items()))\n"})
     commit("chore: remove obsolete metadata test", "Alice", 21, 10, {}, deletes=["tests/test_reader.py"])
     commit("feat: export sprint report as Markdown", "Chen", 22, 10, {"src/reports/export.py": "def to_markdown(report):\n    return '# Sprint report\\n\\n' + '\\n'.join(report)\n", "docs/sprint-review.md": "# Sprint review\nSelect a branch and date range.\nReview charts, inspect diffs and verify report evidence.\nDownload the final report as Markdown.\n"})

@@ -4,9 +4,9 @@
 
 **Full Project Title:** ChangeGuard: An Explainable Change Completeness Analysis Tool Based on Git History
 
-当前上传版本为最初的 v0.1 MVP 基线，提供按日期范围的基础统计与变化报告；不包含独立 Sprint 创建/编辑/切换、Sprint 报告联动或 changed methods 展示。
+当前版本为 v0.2.1 功能迭代版：在最初的 MVP 上加入 Sprint 管理、Sprint 报告联动、changed methods 和 AI 固定编号引用。当前尚未实现自动判断遗漏修改或证明变更完整性。
 
-本项目基于 PyDriller 分析 Git 历史。当前可运行 MVP 支持公开 GitHub 链接和本地仓库，实现数据采集、统计可视化与智能摘要，使用 Python、Streamlit、Plotly、pandas 和 SQLite。标题中的变更完整性判断尚未在此 MVP 中实现。
+基于 PyDriller 的 Git 仓库演化可视化与智能摘要工具，支持公开 GitHub 链接和本地仓库。当前版本是可运行原型，使用 Python、Streamlit、Plotly、pandas 和 SQLite。
 
 ## 启动
 
@@ -45,7 +45,7 @@ python -m streamlit run app.py
 2. 在概览查看时间线、模块变动与文件排行。
 3. 选择日期、开发者、模块，所有页面使用同一组筛选结果。
 4. 在「文件与提交」查看提交说明、文件修改类型和文本 diff。
-5. 在「变化报告」直接下载统计报告；无模型时不会伪装成 AI 摘要。
+5. 在「Sprint 报告」直接下载统计报告；无模型时不会伪装成 AI 摘要。
 6. 使用自己的仓库时，输入绝对路径，点击「读取仓库」，选择分支与采集上限，再点击「分析仓库」。
 
 ## 直接分析别人的 GitHub 仓库
@@ -85,6 +85,23 @@ python -m streamlit run app.py
 - 明确标注的程序统计报告、Markdown 导出。
 - 可选的真实模型调用、结构化摘要、commit/file 引用校验、摘要缓存。
 - 一键载入的合成演示仓库。
+- 按仓库持久保存 Sprint，支持创建、编辑、删除和下拉切换。
+- 按所选 Sprint 同步图表、统计、AI 摘要与 Markdown 报告。
+- 文件详情展示 changed methods 的方法签名及变更前/后行号，报告可导出方法列表。
+
+## Sprint 与 changed methods（v0.2）
+
+分析仓库后，在「Sprint 工作区」展开「创建或编辑 Sprint」，填写名称与含首尾的起止日期并保存。可在「选择 Sprint」中直接切换；选择「自定义日期范围」恢复自由筛选。
+
+Sprint 定义写入 SQLite，重启仍可恢复。GitHub 来源相同的不同下载深度共用 Sprint 定义，本地仓库按路径区分。Sprint 不绑定某条分支，统计仍采用当前分析快照的分支、作者和模块筛选。
+
+在「Sprint 报告」中会自动带上当前 Sprint 名称和日期，可逐个切换生成/下载各自报告。报告文件名包含 Sprint 名称。配置超出采集范围或使用部分历史时会提示覆盖限制；无提交时明确显示空结果，不生成虚假的变化总结。未实现批量生成所有 Sprint 的 AI 报告或 Sprint 对比图。
+
+演示仓库自动创建两个示例 Sprint：Sprint 1（2026-11-09 至 2026-11-14）和 Sprint 2（2026-11-15 至 2026-11-22），各 9 条提交。
+
+Changed methods 通过 PyDriller 的方法解析与 diff 增删行交集获得。文件详情列出方法签名、变更前/后源码版本及行号；方法删除可显示变更前位置。它不是方法身份追踪，同一方法可能有前后两条记录，不应简单相加当作独立方法数。模块级改动、仅路径变更、没有方法定义的文件可能没有结果。不支持的文件和解析失败会分别说明，仍保留文件统计与 diff。
+
+新版本采集缓存版本已更新，旧分析需重新采集以补充方法信息；已有 GitHub 下载可复用，不必重新从网络下载。Markdown 最多列出 200 条方法位置记录并明确截断，完整记录可在提交详情中查看。
 
 ## 配置 AI（可选）
 
@@ -105,8 +122,9 @@ MVP 使用一次有输入预算的模型请求：
 - 最多提供 40 条包含文件变化的提交；更多时按时间跨度均匀采样。
 - 每条最多选 8 个变动量较大的文件；提交说明与 diff 均有长度限制。
 - diff 总预算 48,000 字符。输入预览与报告注明覆盖范围。
-- 模型必须为每条结论返回完整 commit hash 和对应文件路径。
+- v0.2.1 起模型使用输入文件的固定 evidence_id 返回依据，由程序还原完整 commit hash 与文件路径，避免手写引用配错。旧格式仍严格校验。
 - 服务端验证引用确实存在且 commit/file 配对正确。**引用合法不代表结论正确**，仍需人工核查。
+- 校验失败时不保存该 AI 结果，页面保留统计报告并明确说明本次生成或校验失败；不会再误提示为“未调用 AI”。模型接口地址两端的粘贴空白会自动清理，内部控制字符会显示格式错误。
 - 缓存键包含输入、接口地址、模型与提示词版本。未实现逐提交的多阶段摘要。
 
 ## 统计口径和限制
@@ -130,6 +148,8 @@ MVP 使用一次有输入预算的模型请求：
 ```text
 app.py                  Streamlit 页面与交互
 repolens/mining.py      只读 Git 适配、PyDriller 提取、固定快照
+repolens/methods.py     方法签名与变更前后行号提取
+repolens/sprints.py     Sprint 仓库标识与覆盖范围检查
 repolens/remote.py      GitHub URL 校验、下载与缓存更新
 repolens/storage.py     SQLite 分析结果与摘要缓存
 repolens/analytics.py   统一筛选和确定性统计
@@ -157,6 +177,7 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-dev.txt
 
 ```powershell
 .venv/Scripts/python.exe scripts/smoke_browser.py --channel msedge
+.venv/Scripts/python.exe scripts/smoke_sprints.py
 ```
 
 该命令使用已安装的 Edge；也可以使用 `--channel chrome`。检查演示数据、页面、筛选、diff 与报告下载。浏览器截图与下载文件保存在 `work/browser/`，不会修改被分析的实际项目。

@@ -46,9 +46,12 @@ def test_cache_tracks_model_and_input(payload):
     assert key != summary_key(changed, "https://example.test/v1", "model-a")
 
 
-def test_real_http_adapter_against_local_fixture(payload):
+@pytest.mark.parametrize("use_ids", [False, True])
+def test_real_http_adapter_against_local_fixture(payload, use_ids):
     seen = {}
     expected = valid_result(payload)
+    if use_ids:
+        expected = {"highlights": [{"text": "记录了仓库文件变化。", "evidence_ids": [payload["commits"][0]["files"][0]["evidence_id"]]}], "limitations": []}
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
@@ -68,11 +71,13 @@ def test_real_http_adapter_against_local_fixture(payload):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        result = generate_ai_report(payload, f"http://127.0.0.1:{server.server_port}/v1", "fixture-model", "")
+        result = generate_ai_report(payload, f"\t http://127.0.0.1:{server.server_port}/v1 \n", " fixture-model ", "")
         assert result["mode"] == "ai"
         assert result["model"] == "fixture-model"
         assert seen["path"] == "/v1/chat/completions"
         assert seen["body"]["response_format"] == {"type": "json_object"}
+        if use_ids:
+            assert result["highlights"][0]["evidence"] == valid_result(payload)["highlights"][0]["evidence"]
     finally:
         server.shutdown()
         server.server_close()
@@ -82,3 +87,17 @@ def test_real_http_adapter_against_local_fixture(payload):
 def test_rejects_plaintext_remote_endpoint(payload):
     with pytest.raises(SummaryError, match="HTTPS"):
         generate_ai_report(payload, "http://example.test/v1", "model", "")
+
+
+def test_evidence_ids_resolve_exact_commit_and_file(payload):
+    first = payload["commits"][0]
+    ref = first["files"][0]["evidence_id"]
+    result = validate_summary({"highlights": [{"text": "有代码变化", "evidence_ids": [ref, ref]}], "limitations": []}, payload)
+    assert result["highlights"][0]["evidence"] == [{"commit_hash": first["commit_hash"], "files": [first["files"][0]["path"]]}]
+    with pytest.raises(SummaryError, match="依据编号"):
+        validate_summary({"highlights": [{"text": "无效引用", "evidence_ids": ["C999F999"]}]}, payload)
+
+
+def test_internal_control_character_in_api_url_has_friendly_error(payload):
+    with pytest.raises(SummaryError, match="API Base URL"):
+        generate_ai_report(payload, "https://api.exa\tmple.test/v1", "model", "")

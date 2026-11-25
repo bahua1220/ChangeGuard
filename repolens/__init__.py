@@ -1,1 +1,1 @@
-"""ChangeGuard: Git history analysis and evidence-linked reports."""
+"""ChangeGuard: local Git evolution analysis and evidence-linked reports."""

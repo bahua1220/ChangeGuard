@@ -1,4 +1,4 @@
-"""Run against an already-running RepoLens server; no paid model calls."""
+"""Run against an already-running ChangeGuard server; no paid model calls."""
 
 import argparse
 from pathlib import Path
@@ -47,8 +47,8 @@ def main():
         page.screenshot(path=str(output / "diff.png"), full_page=True)
         print("Verified developer table and diff", flush=True)
 
-        page.get_by_role("tab", name="变化报告", exact=True).click()
-        report_panel = page.get_by_role("tabpanel", name="变化报告")
+        page.get_by_role("tab", name="Sprint 报告", exact=True).click()
+        report_panel = page.get_by_role("tabpanel", name="Sprint 报告")
         expect(report_panel.get_by_text("当前显示统计报告，未调用 AI。", exact=False)).to_be_visible()
         with page.expect_download() as download_event:
             report_panel.get_by_role("button", name="下载 Markdown 报告").click()

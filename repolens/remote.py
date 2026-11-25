@@ -114,7 +114,7 @@ def download_github(value: str, branch="", depth=300, refresh=False, cache_root=
     cached = target.exists()
     if cached:
         if not marker.is_file():
-            raise RepositoryError("下载目录不属于有效的 RepoLens 缓存，请改用本地路径打开或联系维护者检查。")
+            raise RepositoryError("下载目录不属于有效的 ChangeGuard 缓存，请改用本地路径打开或联系维护者检查。")
         try:
             saved = json.loads(marker.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
