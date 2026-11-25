@@ -19,7 +19,7 @@ from repolens.storage import load_snapshot, load_summary, recent_runs, save_snap
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
-st.set_page_config(page_title="RepoLens · 仓库演化", page_icon="◈", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="ChangeGuard · Git 历史分析", page_icon="◈", layout="wide", initial_sidebar_state="expanded")
 
 COLORS = ["#087f8c", "#6376c5", "#e9a23b", "#3a9b78", "#c56b82", "#7296ad"]
 px.defaults.color_discrete_sequence = COLORS
@@ -109,7 +109,8 @@ def display_commit(sha, commits, changes, key):
 
 
 with st.sidebar:
-    st.markdown('<div class="brand">◈ Repo<em>Lens</em></div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand">◈ Change<em>Guard</em></div>', unsafe_allow_html=True)
+    st.caption("An Explainable Change Completeness Analysis Tool Based on Git History")
     st.caption("仓库演化 · 可视化 · 智能摘要")
     st.divider()
     if st.button("载入演示仓库", width="stretch", type="primary", help="创建并分析一个包含 18 条合成提交的本地仓库。"):
@@ -186,7 +187,7 @@ with st.sidebar:
         model = st.text_input("模型名称", value=os.getenv("REPOLENS_AI_MODEL", ""), placeholder="填写服务商提供的模型 ID")
         api_key = st.text_input("API Key", value=os.getenv("REPOLENS_AI_API_KEY", ""), type="password")
         st.caption("兼容 Chat Completions + JSON 输出。本地服务可不填密钥。密钥不写入数据库。")
-    st.caption("RepoLens MVP · Local-first")
+    st.caption("ChangeGuard MVP · Local-first")
 
 
 snapshot = st.session_state.get("snapshot")
@@ -350,7 +351,7 @@ with reports:
         if report["mode"] == "ai":
             st.write(f"语义摘要依据覆盖 {report['coverage']['evidence_commits']} / {report['coverage']['selected_commits']} 条提交；文件和 diff 可能截断。引用校验不等同于事实校验。")
     markdown = export_markdown(meta, context, selected_commits, selected_changes, report)
-    st.download_button("下载 Markdown 报告", markdown, file_name=f"repolens-{start}-{end}.md", mime="text/markdown", width="stretch", on_click="ignore")
+    st.download_button("下载 Markdown 报告", markdown, file_name=f"changeguard-{start}-{end}.md", mime="text/markdown", width="stretch", on_click="ignore")
     with st.expander("查看发送给模型的数据结构"):
         st.json(payload, expanded=False)
 

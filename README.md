@@ -1,8 +1,12 @@
-# RepoLens
+# ChangeGuard
+
+**Project Name:** ChangeGuard
+
+**Full Project Title:** ChangeGuard: An Explainable Change Completeness Analysis Tool Based on Git History
 
 当前上传版本为最初的 v0.1 MVP 基线，提供按日期范围的基础统计与变化报告；不包含独立 Sprint 创建/编辑/切换、Sprint 报告联动或 changed methods 展示。
 
-基于 PyDriller 的 Git 仓库演化可视化与智能摘要工具，支持公开 GitHub 链接和本地仓库。当前版本是可运行 MVP，使用 Python、Streamlit、Plotly、pandas 和 SQLite。
+本项目基于 PyDriller 分析 Git 历史。当前可运行 MVP 支持公开 GitHub 链接和本地仓库，实现数据采集、统计可视化与智能摘要，使用 Python、Streamlit、Plotly、pandas 和 SQLite。标题中的变更完整性判断尚未在此 MVP 中实现。
 
 ## 启动
 
@@ -66,7 +70,7 @@ python -m streamlit run app.py
 
 下载时自动检测并使用 Windows 已启用的手动系统代理，页面无需配置代理。未检测到受支持的系统代理时，使用 Git 原有网络配置。代理仅通过当前 Git 命令的临时配置生效，不修改系统或全局 Git 设置，也不影响 AI 接口。暂不自动解析 PAC 脚本，也不处理带账号密码的代理。
 
-被分析仓库保持原分支和工作目录。采集不执行 checkout、不写入源码或仓库配置；SQLite 与演示数据写入 RepoLens 自己的 `data/`。
+被分析仓库保持原分支和工作目录。采集不执行 checkout、不写入源码或仓库配置；SQLite 与演示数据写入 ChangeGuard 自己的 `data/`。
 
 ## 已实现
 

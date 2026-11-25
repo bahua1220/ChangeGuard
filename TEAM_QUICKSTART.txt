@@ -1,4 +1,5 @@
-RepoLens 组内试用说明
+ChangeGuard 组内试用说明
+完整标题：ChangeGuard: An Explainable Change Completeness Analysis Tool Based on Git History
 版本：0.1.0-mvp.20261123
 
 一、没有团队 GitHub 仓库也能先试用
@@ -8,7 +9,7 @@ RepoLens 组内试用说明
 
 二、准备环境
 安装 Python 3.12 和 Git，并确保命令行能执行 python 和 git。
-Windows：在解压后的 RepoLens-MVP 文件夹中打开 PowerShell，依次执行：
+Windows：在项目文件夹中打开 PowerShell，依次执行：
     powershell -ExecutionPolicy Bypass -File .\setup.ps1
     powershell -ExecutionPolicy Bypass -File .\run.ps1
 浏览器访问：http://localhost:8501

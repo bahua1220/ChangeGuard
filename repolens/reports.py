@@ -169,7 +169,7 @@ def _plain(value):
 def export_markdown(meta, context, commits, changes, report):
     stats = metrics(commits, changes)
     lines = [
-        f"# RepoLens · {_plain(context['title'])}", "",
+        f"# ChangeGuard · {_plain(context['title'])}", "",
         f"- 仓库：{_plain(meta['name'])}",
         f"- 分支：{_plain(meta['branch'])}",
         f"- 分支快照：`{meta['tip']}`",
