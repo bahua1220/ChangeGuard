@@ -35,8 +35,8 @@ base_url = 'http://127.0.0.1:59341/v1', model = 'fixture-model', api_key = ''
                 response = client.post(base_url.rstrip("/") + "/chat/completions", headers=headers, json=body)
 >           response.raise_for_status()
 
-repolens/reports.py:176: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+repolens/reports.py:176:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <Response [502 Bad Gateway]>
 
@@ -50,10 +50,10 @@ self = <Response [502 Bad Gateway]>
                 "Cannot call `raise_for_status` as the request "
                 "instance has not been set on this response."
             )
-    
+
         if self.is_success:
             return self
-    
+
         if self.has_redirect_location:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
@@ -65,7 +65,7 @@ self = <Response [502 Bad Gateway]>
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
                 "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
-    
+
         status_class = self.status_code // 100
         error_types = {
             1: "Informational response",
@@ -92,7 +92,7 @@ use_ids = False
         expected = valid_result(payload)
         if use_ids:
             expected = {"highlights": [{"text": "记录了仓库文件变化。", "evidence_ids": [payload["commits"][0]["files"][0]["evidence_id"]]}], "limitations": []}
-    
+
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self):
                 seen["path"] = self.path
@@ -103,10 +103,10 @@ use_ids = False
                 self.send_header("Content-Length", str(len(response)))
                 self.end_headers()
                 self.wfile.write(response)
-    
+
             def log_message(self, *_):
                 pass
-    
+
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -114,8 +114,8 @@ use_ids = False
 >           result = generate_ai_report(payload, f"\t http://127.0.0.1:{server.server_port}/v1 \n", " fixture-model ", "")
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/test_ai.py:74: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_ai.py:74:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 payload = {'statistics': {'commits': 18, 'developers': 3, 'files': 14, 'added': 62, ...}, 'author_identity_policy': 'developers ..._commit': 8, 'note': 'Evidence is sampled across time if more than 40 eligible commits; diffs may be truncated.'}, ...}
 base_url = 'http://127.0.0.1:59341/v1', model = 'fixture-model', api_key = ''
@@ -195,8 +195,8 @@ base_url = 'http://127.0.0.1:59343/v1', model = 'fixture-model', api_key = ''
                 response = client.post(base_url.rstrip("/") + "/chat/completions", headers=headers, json=body)
 >           response.raise_for_status()
 
-repolens/reports.py:176: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+repolens/reports.py:176:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <Response [502 Bad Gateway]>
 
@@ -210,10 +210,10 @@ self = <Response [502 Bad Gateway]>
                 "Cannot call `raise_for_status` as the request "
                 "instance has not been set on this response."
             )
-    
+
         if self.is_success:
             return self
-    
+
         if self.has_redirect_location:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
@@ -225,7 +225,7 @@ self = <Response [502 Bad Gateway]>
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
                 "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
-    
+
         status_class = self.status_code // 100
         error_types = {
             1: "Informational response",
@@ -252,7 +252,7 @@ use_ids = True
         expected = valid_result(payload)
         if use_ids:
             expected = {"highlights": [{"text": "记录了仓库文件变化。", "evidence_ids": [payload["commits"][0]["files"][0]["evidence_id"]]}], "limitations": []}
-    
+
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self):
                 seen["path"] = self.path
@@ -263,10 +263,10 @@ use_ids = True
                 self.send_header("Content-Length", str(len(response)))
                 self.end_headers()
                 self.wfile.write(response)
-    
+
             def log_message(self, *_):
                 pass
-    
+
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -274,8 +274,8 @@ use_ids = True
 >           result = generate_ai_report(payload, f"\t http://127.0.0.1:{server.server_port}/v1 \n", " fixture-model ", "")
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/test_ai.py:74: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_ai.py:74:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 payload = {'statistics': {'commits': 18, 'developers': 3, 'files': 14, 'added': 62, ...}, 'author_identity_policy': 'developers ..._commit': 8, 'note': 'Evidence is sampled across time if more than 40 eligible commits; diffs may be truncated.'}, ...}
 base_url = 'http://127.0.0.1:59343/v1', model = 'fixture-model', api_key = ''
