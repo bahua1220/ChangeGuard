@@ -4,7 +4,7 @@
 
 **Full Project Title:** ChangeGuard: An Explainable Change Completeness Analysis Tool Based on Git History
 
-当前版本为 v0.2.1 功能迭代版：在最初的 MVP 上加入 Sprint 管理、Sprint 报告联动、changed methods 和 AI 固定编号引用。当前尚未实现自动判断遗漏修改或证明变更完整性。
+当前版本为 v0.3.0 功能迭代版：在原有 Sprint 管理、Sprint 报告、changed methods 和 AI 固定编号引用的基础上，增加两期 Sprint 活动对比与报告导出。当前尚未实现自动判断遗漏修改或证明变更完整性。
 
 基于 PyDriller 的 Git 仓库演化可视化与智能摘要工具，支持公开 GitHub 链接和本地仓库。当前版本是可运行原型，使用 Python、Streamlit、Plotly、pandas 和 SQLite。
 
@@ -87,6 +87,7 @@ python -m streamlit run app.py
 - 一键载入的合成演示仓库。
 - 按仓库持久保存 Sprint，支持创建、编辑、删除和下拉切换。
 - 按所选 Sprint 同步图表、统计、AI 摘要与 Markdown 报告。
+- 独立选择两个 Sprint，对比活动指标、模块及文件变更，导出有筛选与快照依据的统计报告。
 - 文件详情展示 changed methods 的方法签名及变更前/后行号，报告可导出方法列表。
 
 ## Sprint 与 changed methods（v0.2）
@@ -95,7 +96,20 @@ python -m streamlit run app.py
 
 Sprint 定义写入 SQLite，重启仍可恢复。GitHub 来源相同的不同下载深度共用 Sprint 定义，本地仓库按路径区分。Sprint 不绑定某条分支，统计仍采用当前分析快照的分支、作者和模块筛选。
 
-在「Sprint 报告」中会自动带上当前 Sprint 名称和日期，可逐个切换生成/下载各自报告。报告文件名包含 Sprint 名称。配置超出采集范围或使用部分历史时会提示覆盖限制；无提交时明确显示空结果，不生成虚假的变化总结。未实现批量生成所有 Sprint 的 AI 报告或 Sprint 对比图。
+在「Sprint 报告」中会自动带上当前 Sprint 名称和日期，可逐个切换生成/下载各自报告。报告文件名包含 Sprint 名称。配置超出采集范围或使用部分历史时会提示覆盖限制；无提交时明确显示空结果，不生成虚假的变化总结。未实现批量生成所有 Sprint 的 AI 报告。
+
+### Sprint 对比（v0.3）
+
+在「Sprint 对比」页选择 A（基准）和 B（对照）。两期各自按保存日期计算，使用同一分析快照、时区，以及页面上方相同的开发者/模块筛选。它们独立于「选择 Sprint」与单期自定义日期；单期日期内没有提交时仍可对比。
+
+- 指标表展示提交数、作者标识数、文件路径数、增删行、变动行、日历天数、平均每日提交数，以及 B 相对 A 的差值和变化率。A 为 0 时变化率不计算。
+- 模块柱状图比较两期增删行之和，展示合计变动量最高的 12 个模块；表格包含全部模块。
+- 文件表使用两期路径并集，分别列出提交与增删行，并标记「仅 A 有变更」「仅 B 有变更」「两期均有变更」。这些标记不代表文件新增/删除，重命名前后按不同路径计数。
+- 日期重叠、时长不同、空结果、浅克隆或采集截断都会提示。平均每日提交数以含首尾的日历天数为分母。
+- 可下载 Markdown 对比报告，包含分支、tip、快照标识、时区、筛选和覆盖限制。导出最多列出 100 个文件并说明截断，页面表格可查看全部。
+- 不需要模型/API。此功能比较两期 Git 开发活动，不进行版本间完整源码差异比较，也不推断质量、工时或贡献比例。
+
+快速验收：载入演示仓库 → 「Sprint 对比」→ A 选 Sprint 1，B 选 Sprint 2。预期两期均 9 条提交；A 新增/删除行 38/1、B 为 24/7；时长分别为 6/8 天。尝试交换 A/B、选择同一个 Sprint、使用开发者或模块筛选，然后下载报告核对。
 
 演示仓库自动创建两个示例 Sprint：Sprint 1（2026-11-09 至 2026-11-14）和 Sprint 2（2026-11-15 至 2026-11-22），各 9 条提交。
 
@@ -150,6 +164,8 @@ app.py                  Streamlit 页面与交互
 repolens/mining.py      只读 Git 适配、PyDriller 提取、固定快照
 repolens/methods.py     方法签名与变更前后行号提取
 repolens/sprints.py     Sprint 仓库标识与覆盖范围检查
+repolens/comparison.py  两期统计、差值、文件并集与对比报告
+repolens/comparison_ui.py Sprint 对比页面
 repolens/remote.py      GitHub URL 校验、下载与缓存更新
 repolens/storage.py     SQLite 分析结果与摘要缓存
 repolens/analytics.py   统一筛选和确定性统计
