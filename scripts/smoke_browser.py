@@ -73,7 +73,7 @@ def main():
         page.get_by_role("combobox", name="模块（首级目录）", exact=True).fill("docs")
         page.get_by_role("option", name="docs", exact=True).click()
         page.keyboard.press("Escape")
-        expect(page.get_by_text("当前筛选范围没有提交。", exact=False)).to_be_visible(timeout=30000)
+        expect(report_panel.get_by_text("当前筛选范围没有提交。", exact=False)).to_be_visible(timeout=30000)
         expect(page.get_by_test_id("stException")).to_have_count(0)
         assert not errors, errors
         browser.close()

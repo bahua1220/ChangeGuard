@@ -1,0 +1,93 @@
+{
+  "mode": "masked_change_replay",
+  "snapshot_id": "0b7e87403424f2d140101dc8",
+  "top_k": 5,
+  "case_count": 2,
+  "abstained_cases": 0,
+  "rules": {
+    "hit_at_1": 2,
+    "hit_at_k": 2,
+    "recovery_at_k": 1.0,
+    "mean_reciprocal_rank": 1.0
+  },
+  "frequency_baseline": {
+    "hit_at_1": 0,
+    "hit_at_k": 2,
+    "recovery_at_k": 1.0,
+    "mean_reciprocal_rank": 0.5
+  },
+  "cases": [
+    {
+      "target": "4faa7e8445ed8f16f36805502b5b8d3d9341cb39",
+      "hidden_path": "src/auth.py",
+      "status": "suggestions",
+      "history_used": 12,
+      "suggestions": [
+        "src/auth.py"
+      ],
+      "frequency_baseline": [
+        "src/cache.py",
+        "src/auth.py"
+      ],
+      "rank": 1,
+      "baseline_rank": 2
+    },
+    {
+      "target": "4faa7e8445ed8f16f36805502b5b8d3d9341cb39",
+      "hidden_path": "tests/test_auth.py",
+      "status": "suggestions",
+      "history_used": 12,
+      "suggestions": [
+        "tests/test_auth.py"
+      ],
+      "frequency_baseline": [
+        "src/cache.py",
+        "tests/test_auth.py"
+      ],
+      "rank": 1,
+      "baseline_rank": 2
+    }
+  ],
+  "limitations": [
+    "人工遮蔽本来已修改的文件，仅衡量候选找回能力，不是实际遗漏或缺陷的正确率。",
+    "每个案例只用目标的已采集祖先，遮蔽文件不进入目标触及列表。",
+    "频率基线与规则使用相同有效历史、路径排除和候选存在性条件。",
+    "有限历史、规则阈值及案例选择都会影响结果；空建议也计入评估分母。"
+  ],
+  "source": "synthetic_demo",
+  "repository": "/Users/lulu/Downloads/ChangeGuard-v0.4-submit/data/completeness_demo_repository",
+  "branch": "refs/heads/main",
+  "tip": "25cb91a2f6088aa8d6f60f721999c3b029aa8805",
+  "options": {
+    "history_limit": 500,
+    "min_support": 3,
+    "min_confidence": 0.6,
+    "max_files": 20,
+    "top_k": 5
+  },
+  "case_selection": "完整控制提交分别遮蔽源码和测试文件",
+  "functional_controls": [
+    {
+      "scenario": "auth-only change",
+      "expected": [
+        "tests/test_auth.py"
+      ],
+      "observed": [
+        "tests/test_auth.py"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "complete auth and test",
+      "expected": [],
+      "observed": [],
+      "passed": true
+    },
+    {
+      "scenario": "unrelated cache-only",
+      "expected": [],
+      "observed": [],
+      "passed": true
+    }
+  ]
+}

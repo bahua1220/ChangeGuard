@@ -1,0 +1,79 @@
+{
+  "version": "0.4.0-mvp.20261128",
+  "base_commit": "9c5c0df72f21313ae5d14d4b746d3808b154c949",
+  "file_count": 14,
+  "patch_apply_check": "passed",
+  "source_matches_tested_full_release": true,
+  "files": [
+    {
+      "status": "M",
+      "path": "CHANGELOG.md",
+      "sha256": "78f73b85fcc362d056aeed4120e4e30b7e8101a91ada4522791c9ae5c416be30"
+    },
+    {
+      "status": "M",
+      "path": "README.md",
+      "sha256": "c8b7d0a9da13e1e685e3d735d314a71e9553b1063f76d0c864814a7ffb670c7f"
+    },
+    {
+      "status": "M",
+      "path": "TEAM_QUICKSTART.txt",
+      "sha256": "7b69c87cc2de63f423436cfb06f2532cb806d23c1b6de63983622d87f531c127"
+    },
+    {
+      "status": "M",
+      "path": "VERSION",
+      "sha256": "a46c2aef6ff8be08372743a9bc12dd78f816380bfd718448d2e7ae514ebc72b8"
+    },
+    {
+      "status": "M",
+      "path": "app.py",
+      "sha256": "f217736e5abace6fc4324cbfe0c91b2c73d00bf7b9a8ee172f433de64e8d1601"
+    },
+    {
+      "status": "A",
+      "path": "repolens/completeness.py",
+      "sha256": "dac7bac4936d42f5e596103e8c957f8a847381dea4ca05a70c024c8e1831fc99"
+    },
+    {
+      "status": "A",
+      "path": "repolens/completeness_demo.py",
+      "sha256": "2d611f29d2a72004e4df2787430e3a92bf341fadf51f06c428024834eea082cb"
+    },
+    {
+      "status": "A",
+      "path": "repolens/completeness_eval.py",
+      "sha256": "033023b8a527da3c6225c4aaa2fd8ff2fbe3a5280feb6fddca321a65aba2e2bd"
+    },
+    {
+      "status": "A",
+      "path": "repolens/completeness_ui.py",
+      "sha256": "afc9afd79c7bc64ff27bda758dfd8665404e099ea480e1597d3bbb8d9e8b8009"
+    },
+    {
+      "status": "A",
+      "path": "scripts/evaluate_completeness.py",
+      "sha256": "831be8d87791ae026c0c2039eff9eaac3149561a9729e2912e0da902edbceaab"
+    },
+    {
+      "status": "M",
+      "path": "scripts/smoke_browser.py",
+      "sha256": "6a749410ee104b434001da733c83dd63434e7a5ef3d84e103b886d051a419b19"
+    },
+    {
+      "status": "M",
+      "path": "scripts/smoke_comparison.py",
+      "sha256": "41d7807c121e58deb196f752c3c9fa76c54ff81fb9aa0640579b0217622db688"
+    },
+    {
+      "status": "A",
+      "path": "scripts/smoke_completeness.py",
+      "sha256": "8e8a0e3da24ffd68034ad47d1b5fecb6f2285bb76cec72f73f87decb345833f1"
+    },
+    {
+      "status": "A",
+      "path": "tests/test_completeness.py",
+      "sha256": "7805f43076561ce6f36858b77e0bec6ecd62ba2307053d1f84365ba6598a0d18"
+    }
+  ]
+}

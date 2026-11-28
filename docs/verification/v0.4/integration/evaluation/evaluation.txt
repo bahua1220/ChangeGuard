@@ -1,0 +1,20 @@
+ChangeGuard 潜在遗漏检测评估
+
+来源：synthetic_demo
+快照：0b7e87403424f2d140101dc8
+分支：refs/heads/main；tip：25cb91a2f6088aa8d6f60f721999c3b029aa8805
+案例选择：完整控制提交分别遮蔽源码和测试文件
+遮蔽案例：2；K=5；规则未给出建议：0
+规则结果：{'hit_at_1': 2, 'hit_at_k': 2, 'recovery_at_k': 1.0, 'mean_reciprocal_rank': 1.0}
+历史修改频率基线：{'hit_at_1': 0, 'hit_at_k': 2, 'recovery_at_k': 1.0, 'mean_reciprocal_rank': 0.5}
+
+合成功能对照：
+{"scenario": "auth-only change", "expected": ["tests/test_auth.py"], "observed": ["tests/test_auth.py"], "passed": true}
+{"scenario": "complete auth and test", "expected": [], "observed": [], "passed": true}
+{"scenario": "unrelated cache-only", "expected": [], "observed": [], "passed": true}
+
+评估范围：
+人工遮蔽本来已修改的文件，仅衡量候选找回能力，不是实际遗漏或缺陷的正确率。
+每个案例只用目标的已采集祖先，遮蔽文件不进入目标触及列表。
+频率基线与规则使用相同有效历史、路径排除和候选存在性条件。
+有限历史、规则阈值及案例选择都会影响结果；空建议也计入评估分母。

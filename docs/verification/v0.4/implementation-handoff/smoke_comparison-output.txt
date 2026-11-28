@@ -1,0 +1,1 @@
+Sprint comparison browser acceptance passed: charts, exact totals, swap, same range, author filter, Markdown download.

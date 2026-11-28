@@ -1,0 +1,1 @@
+Sprint browser acceptance passed: saved ranges, independent reports, methods, persistence.

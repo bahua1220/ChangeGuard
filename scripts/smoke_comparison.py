@@ -59,6 +59,8 @@ def main():
         assert "| 新增行 | 38 | 24 | -14 | -36.8% |" in report
         assert "A：Sprint 1" in report and "B：Sprint 2" in report
         assert "src/mining/extractor.py" in report and "未调用 AI" in report
+        panel.get_by_role("heading", name="Sprint 对比", exact=True).scroll_into_view_if_needed()
+        page.screenshot(path=str(output / "sprint-comparison-all-authors.png"), full_page=True)
 
         choose(b, "Sprint 1")
         expect(panel.get_by_text("请选择两个不同的 Sprint。", exact=True)).to_be_visible()

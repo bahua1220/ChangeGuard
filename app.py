@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from repolens.analytics import daily_activity, developer_activity, file_activity, filter_frames, frames, metrics, module_activity
 from repolens.demo import create_demo
 from repolens.comparison_ui import render_comparison
+from repolens.completeness_ui import render_completeness
+from repolens.completeness_demo import create_completeness_demo
 from repolens.mining import MINING_VERSION, RepositoryError, analysis_spec, inspect_repository, mine, short_branch
 from repolens.remote import download_github
 from repolens.network import windows_proxy
@@ -125,7 +127,7 @@ def display_commit(sha, commits, changes, key):
 with st.sidebar:
     st.markdown('<div class="brand">◈ Change<em>Guard</em></div>', unsafe_allow_html=True)
     st.caption("An Explainable Change Completeness Analysis Tool Based on Git History")
-    st.caption("仓库演化 · 可视化 · 智能摘要")
+    st.caption("仓库演化 · 遗漏检查 · 智能摘要")
     st.divider()
     if st.button("载入演示仓库", width="stretch", type="primary", help="创建并分析一个包含 18 条合成提交的本地仓库。"):
         try:
@@ -139,6 +141,16 @@ with st.sidebar:
             if not list_sprints(demo_key):
                 save_sprint(demo_key, "Sprint 1", "2026-11-09", "2026-11-14")
                 save_sprint(demo_key, "Sprint 2", "2026-11-15", "2026-11-22")
+        except (RepositoryError, RuntimeError, ValueError) as exc:
+            st.error(str(exc))
+    if st.button("载入遗漏检测演示", width="stretch", help="单独的合成仓库，包含关联文件未修改、完整修改和无关修改案例。"):
+        try:
+            path = create_completeness_demo()
+            info = inspect_repository(path)
+            st.session_state["repo_input"] = path
+            st.session_state["repo_info"] = info
+            st.session_state["source_mode"] = "本地路径"
+            analyze(info, info["current"], 300, False)
         except (RepositoryError, RuntimeError, ValueError) as exc:
             st.error(str(exc))
     st.caption("演示数据为合成记录，不代表真实开发活动。")
@@ -215,11 +227,12 @@ snapshot = st.session_state.get("snapshot")
 if snapshot is None:
     st.markdown('''<div class="hero"><div class="eyebrow">REPOSITORY EVOLUTION, MADE READABLE</div>
     <h1>看见代码如何演化。</h1><p>从分散的 Git 记录，到清晰的开发脉络。<br>探索提交、开发者与文件变化，为下一次 Sprint 回顾准备有依据的报告。</p>
-    <span class="tag">PyDriller + Interactive Analytics + AI Summaries</span></div>''', unsafe_allow_html=True)
+    <span class="tag">PyDriller + Explainable Change Review + AI Summaries</span></div>''', unsafe_allow_html=True)
     st.info("从左侧输入公开 GitHub 仓库链接，点击「下载并分析」；也可载入演示仓库或使用本地路径。")
-    for col, (symbol, name, text) in zip(st.columns(3), [
+    for col, (symbol, name, text) in zip(st.columns(4), [
         ("◷", "读懂开发节奏", "按日期、开发者与模块探索提交趋势，定位值得进一步查看的变化。"),
         ("▤", "回到代码本身", "从文件修改排行深入到具体提交，直接查看代码差异和重命名记录。"),
+        ("↔", "检查潜在遗漏", "根据历史共同修改记录提示建议检查的关联文件，并查看原始提交依据。"),
         ("◇", "让总结有据可查", "先生成准确的统计报告；连接模型后，查看附带提交与文件引用的 AI 摘要。"),
     ]):
         with col:
@@ -233,7 +246,7 @@ commits, changes = frames(snapshot, timezone)
 st.markdown(f'''<div class="hero"><div class="eyebrow">REPOSITORY WORKSPACE</div>
 <h1>{html.escape(meta['name'])}</h1><p>从开发节奏到具体代码，让每一段变化都有迹可循。</p>
 <span class="tag">{html.escape(short_branch(meta['branch']))} &nbsp; / &nbsp; {meta['tip'][:10]} &nbsp; / &nbsp; {len(commits)} commits</span></div>''', unsafe_allow_html=True)
-if Path(meta["path"]).name == "demo_repository":
+if Path(meta["path"]).name in {"demo_repository", "completeness_demo_repository"}:
     st.caption("演示模式 · 以下数据来自本机生成的合成 Git 仓库。")
 if meta.get("source_url"):
     st.caption("GitHub 来源：" + meta["source_url"])
@@ -304,10 +317,13 @@ selected_commits, selected_changes = filter_frames(commits, changes, start, end,
 stats = metrics(selected_commits, selected_changes)
 for col, label, value in zip(st.columns(5), ["提交", "作者标识", "文件路径", "新增行", "删除行"], [stats["commits"], stats["developers"], stats["files"], stats["added"], stats["deleted"]]):
     col.metric(label, f"{value:,}")
-overview, developers, explorer, reports, comparison = st.tabs(["仓库概览", "开发者活动", "文件与提交", "Sprint 报告", "Sprint 对比"])
+overview, developers, explorer, reports, comparison, completeness = st.tabs(["仓库概览", "开发者活动", "文件与提交", "Sprint 报告", "Sprint 对比", "遗漏修改检查"])
 
 with comparison:
     render_comparison(meta, commits, changes, sprints, selected_authors, selected_modules, timezone, repo_key, plot)
+
+with completeness:
+    render_completeness(snapshot, selected_commits, display_commit)
 
 if selected_commits.empty:
     for tab in (overview, developers, explorer, reports):
