@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 
 from repolens.analytics import daily_activity, developer_activity, file_activity, filter_frames, frames, metrics, module_activity
 from repolens.demo import create_demo
+from repolens.comparison_ui import render_comparison
 from repolens.mining import MINING_VERSION, RepositoryError, analysis_spec, inspect_repository, mine, short_branch
 from repolens.remote import download_github
 from repolens.network import windows_proxy
@@ -303,11 +304,16 @@ selected_commits, selected_changes = filter_frames(commits, changes, start, end,
 stats = metrics(selected_commits, selected_changes)
 for col, label, value in zip(st.columns(5), ["提交", "作者标识", "文件路径", "新增行", "删除行"], [stats["commits"], stats["developers"], stats["files"], stats["added"], stats["deleted"]]):
     col.metric(label, f"{value:,}")
-if selected_commits.empty:
-    st.info("当前筛选范围没有提交。请调整日期、开发者或模块。")
-    st.stop()
+overview, developers, explorer, reports, comparison = st.tabs(["仓库概览", "开发者活动", "文件与提交", "Sprint 报告", "Sprint 对比"])
 
-overview, developers, explorer, reports = st.tabs(["仓库概览", "开发者活动", "文件与提交", "Sprint 报告"])
+with comparison:
+    render_comparison(meta, commits, changes, sprints, selected_authors, selected_modules, timezone, repo_key, plot)
+
+if selected_commits.empty:
+    for tab in (overview, developers, explorer, reports):
+        with tab:
+            st.info("当前筛选范围没有提交。请调整日期、开发者或模块；仍可使用 Sprint 对比。")
+    st.stop()
 
 with overview:
     left, right = st.columns([1.6, 1])
