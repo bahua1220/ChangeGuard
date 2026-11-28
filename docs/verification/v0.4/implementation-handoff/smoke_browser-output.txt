@@ -1,0 +1,5 @@
+Verified overview
+Verified developer table and diff
+Verified report download
+Verified author filter
+Browser smoke passed: demo, charts, developer tab, diff, Markdown download, author/module filtering, empty state.

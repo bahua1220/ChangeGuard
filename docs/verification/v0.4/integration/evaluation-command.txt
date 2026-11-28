@@ -1,0 +1,1 @@
+{"source": "synthetic_demo", "controls_passed": 3, "controls_total": 3, "cases": 2, "rules": {"hit_at_1": 2, "hit_at_k": 2, "recovery_at_k": 1.0, "mean_reciprocal_rank": 1.0}, "baseline": {"hit_at_1": 0, "hit_at_k": 2, "recovery_at_k": 1.0, "mean_reciprocal_rank": 0.5}, "output": "docs/verification/v0.4/integration/evaluation"}

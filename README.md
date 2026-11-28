@@ -4,7 +4,7 @@
 
 **Full Project Title:** ChangeGuard: An Explainable Change Completeness Analysis Tool Based on Git History
 
-当前版本为 v0.3.0 功能迭代版：在原有 Sprint 管理、Sprint 报告、changed methods 和 AI 固定编号引用的基础上，增加两期 Sprint 活动对比与报告导出。当前尚未实现自动判断遗漏修改或证明变更完整性。
+当前版本为 v0.4.0：在仓库可视化、Sprint 管理/报告、changed methods、AI 引用校验与 Sprint 对比的基础上，增加**范围明确的潜在遗漏修改检查**。该检查根据目标提交的历史共同修改规则推荐需人工检查的关联文件，附原始提交依据；它不证明业务变更完整性。
 
 基于 PyDriller 的 Git 仓库演化可视化与智能摘要工具，支持公开 GitHub 链接和本地仓库。当前版本是可运行原型，使用 Python、Streamlit、Plotly、pandas 和 SQLite。
 
@@ -88,6 +88,7 @@ python -m streamlit run app.py
 - 按仓库持久保存 Sprint，支持创建、编辑、删除和下拉切换。
 - 按所选 Sprint 同步图表、统计、AI 摘要与 Markdown 报告。
 - 独立选择两个 Sprint，对比活动指标、模块及文件变更，导出有筛选与快照依据的统计报告。
+- 选择一个普通提交，学习已采集祖先中的文件共同修改规则，提示潜在遗漏路径、关联比例和历史依据；支持报告导出及独立合成演示。
 - 文件详情展示 changed methods 的方法签名及变更前/后行号，报告可导出方法列表。
 
 ## Sprint 与 changed methods（v0.2）
@@ -116,6 +117,36 @@ Sprint 定义写入 SQLite，重启仍可恢复。GitHub 来源相同的不同�
 Changed methods 通过 PyDriller 的方法解析与 diff 增删行交集获得。文件详情列出方法签名、变更前/后源码版本及行号；方法删除可显示变更前位置。它不是方法身份追踪，同一方法可能有前后两条记录，不应简单相加当作独立方法数。模块级改动、仅路径变更、没有方法定义的文件可能没有结果。不支持的文件和解析失败会分别说明，仍保留文件统计与 diff。
 
 新版本采集缓存版本已更新，旧分析需重新采集以补充方法信息；已有 GitHub 下载可复用，不必重新从网络下载。Markdown 最多列出 200 条方法位置记录并明确截断，完整记录可在提交详情中查看。
+
+## 潜在遗漏修改检查（v0.4）
+
+点击左侧「载入遗漏检测演示」，再进入「遗漏修改检查」页。独立演示仓库包含 15 条合成提交，不改变原有 18 条提交的演示与 Sprint 指标。
+
+默认目标 `demo: auth-only change (missing test update)` 只改 `src/auth.py`。更早的历史中它与 `tests/test_auth.py` 共同修改了 4 次；默认阈值下页面建议检查测试文件，并提供 4 条历史提交及 diff。选择 `complete auth and test change` 或 `unrelated cache-only change` 可查看无建议的对照案例。
+
+使用真实仓库时，先采集足够的历史，然后在该页选择当前筛选中的目标提交并点击「检查潜在遗漏」。检测不调用 AI，也不重新下载历史。
+
+规则与范围：
+
+- 默认历史窗口 500、最少共同修改 3 次、最低关联比例 60%、每提交最多 20 个路径。
+- 规则为 A → B；共同修改次数为 count(A,B)，历史关联比例为 count(A,B)/count(A)。计数只来自有效历史事务，比例不是缺陷概率。
+- 通过 Git 祖先关系取目标以前的提交，并与当前已采集快照取交集；不用目标本身、未来提交、同级分支或单纯日期排序推断先后。
+- 历史不随页面作者/模块/日期筛选缩小；当前提交使用完整触及路径，避免把已修改但被筛选隐藏的文件误报为遗漏。
+- 只学习稳定路径的文本 MODIFY；新增、删除、重命名、二进制不作为触发记录。窗口内出现重命名/删除的路径整体排除，不追踪文件身份。
+- 跳过 merge、大规模提交、常见锁文件、依赖/生成目录和压缩资源。阈值可调，界面/导出保存具体参数。
+- 候选必须存在于目标提交的文件树，并且没有被该提交触及。检查只读 Git 对象，不 checkout、不修改被分析仓库。
+- 结果包含候选、触发文件、共同修改次数、分母、关联比例、原始依据和完整口径。无建议分为“历史证据不足”“不适用”和“当前阈值下未发现”，不宣称变更完整。
+
+### 检测评估
+
+```powershell
+.venv/Scripts/python.exe scripts/evaluate_completeness.py --demo
+.venv/Scripts/python.exe scripts/evaluate_completeness.py --repository D:/path/to/repo --limit 300 --cases 20 --top-k 5
+```
+
+结果保存为 `work/completeness-evaluation/evaluation.json` / `evaluation.txt`。合成模式检查三个功能对照，并对完整控制提交分别遮蔽源码/测试文件。真实仓库模式按采集顺序选择多文件 MODIFY 提交，每个案例遮蔽按路径排序的最后一个文件。两种模式都只用目标祖先训练，并与同一有效历史下的文件修改频率基线比较。
+
+报告给出 Top-1 / Top-K 找回数、遮蔽找回率、平均倒数排名和未给建议的案例数。**遮蔽找回率衡量模拟的文件推荐任务，不能当作真实遗漏或缺陷准确率。** 合成案例用于功能验证，真实有效性还需实际仓库评估与人工核查。
 
 ## 配置 AI（可选）
 
@@ -166,6 +197,10 @@ repolens/methods.py     方法签名与变更前后行号提取
 repolens/sprints.py     Sprint 仓库标识与覆盖范围检查
 repolens/comparison.py  两期统计、差值、文件并集与对比报告
 repolens/comparison_ui.py Sprint 对比页面
+repolens/completeness.py 祖先历史关联规则、候选解释和导出
+repolens/completeness_ui.py 遗漏检查页面与依据核查
+repolens/completeness_demo.py 独立的合成对照仓库
+repolens/completeness_eval.py 遮蔽回放及频率基线评估
 repolens/remote.py      GitHub URL 校验、下载与缓存更新
 repolens/storage.py     SQLite 分析结果与摘要缓存
 repolens/analytics.py   统一筛选和确定性统计
@@ -194,6 +229,8 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-dev.txt
 ```powershell
 .venv/Scripts/python.exe scripts/smoke_browser.py --channel msedge
 .venv/Scripts/python.exe scripts/smoke_sprints.py
+.venv/Scripts/python.exe scripts/smoke_comparison.py
+.venv/Scripts/python.exe scripts/smoke_completeness.py
 ```
 
 该命令使用已安装的 Edge；也可以使用 `--channel chrome`。检查演示数据、页面、筛选、diff 与报告下载。浏览器截图与下载文件保存在 `work/browser/`，不会修改被分析的实际项目。
@@ -216,5 +253,6 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-dev.txt
 - [PyDriller Commit / ModifiedFile](https://pydriller.readthedocs.io/en/latest/modifiedfile.html)
 - [Streamlit](https://docs.streamlit.io/)
 - [Plotly Python](https://plotly.com/python/)
+- [Zimmermann et al., Mining Version Histories to Guide Software Changes, ICSE 2004](https://st.cispa.saarland/papers/icse2004/)：历史关联推荐的相关研究；本原型采用文件级计数和受限检查流程，没有复现 ROSE 的完整实现或实验结果。
 
 PyDriller 是上游依赖；本项目的演示记录为合成数据。提交课程报告时应分别说明上游能力与本项目新增实现。
